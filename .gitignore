@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# Database
+cctv.db
+
+# Snapshots and Media
+snapshots/
+*.mp4
+*.jpg
+*.png
+
+# Weights
+*.pt
+
+# OS
+.DS_Store

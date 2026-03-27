@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SYNTHETIC SENTINEL | MISSION CONTROL</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#410004",
+                        "surface-container-highest": "#31353a",
+                        "tertiary-container": "#ff938c",
+                        "tertiary": "#ffbcb7",
+                        "secondary-fixed": "#e9ddff",
+                        "on-tertiary": "#68000a",
+                        "inverse-primary": "#855300",
+                        "outline-variant": "#534434",
+                        "surface-dim": "#101418",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#ffdad7",
+                        "primary-fixed-dim": "#ffb95f",
+                        "inverse-on-surface": "#2d3135",
+                        "surface-tint": "#ffb95f",
+                        "on-background": "#e0e3e8",
+                        "on-primary-fixed-variant": "#653e00",
+                        "surface-container-low": "#181c20",
+                        "on-primary-fixed": "#2a1700",
+                        "on-primary": "#472a00",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "on-tertiary-container": "#8d0012",
+                        "on-secondary-container": "#c4abff",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "surface-variant": "#31353a",
+                        "on-surface": "#e0e3e8",
+                        "primary-container": "#f59e0b",
+                        "background": "#101418",
+                        "secondary-container": "#571bc1",
+                        "surface-container-high": "#262a2f",
+                        "primary": "#ffc174",
+                        "surface": "#101418",
+                        "inverse-surface": "#e0e3e8",
+                        "surface-container": "#1c2024",
+                        "on-surface-variant": "#d8c3ad",
+                        "outline": "#a08e7a",
+                        "primary-fixed": "#ffddb8",
+                        "surface-container-lowest": "#0a0f13",
+                        "surface-bright": "#353a3e",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-secondary-fixed": "#23005c",
+                        "error": "#ffb4ab",
+                        "secondary": "#d0bcff",
+                        "on-primary-container": "#613b00",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary": "#3c0091"
+                    },
+                    fontFamily: {
+                        "headline": ["Barlow Condensed"],
+                        "body": ["Inter"],
+                        "label": ["JetBrains Mono"]
+                    },
+                    borderRadius: { "DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .scanline-anim::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(18, 16, 16, 0.1);
+            opacity: 0;
+            z-index: 2;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+            background: linear-gradient(to bottom, transparent 0%, rgba(245, 158, 11, 0.05) 50%, transparent 100%);
+        }
+        .pulse-red { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .3; }
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #101418; }
+        ::-webkit-scrollbar-thumb { background: #31353a; }
+        .corner-bracket {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface overflow-hidden h-screen select-none">
+<!-- CRT Global Overlay -->
+<div class="fixed inset-0 crt-overlay z-[100] opacity-30"></div>
+<!-- Layout Wrapper -->
+<div class="flex h-full w-full overflow-hidden">
+<!-- Predicted Component: SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col items-center py-8 z-40 bg-[#181c20] text-amber-500 font-['JetBrains_Mono'] uppercase text-[10px] tracking-wider docked h-screen left-0 w-20 tonal-shift bg-[#101418] flat no shadows">
+<div class="mb-10 text-amber-500 font-bold">
+<span class="material-symbols-outlined text-3xl">terminal</span>
+</div>
+<nav class="flex flex-col gap-2 w-full">
+<!-- DASHBOARD Active -->
+<div class="flex flex-col items-center justify-center bg-amber-500/10 text-amber-500 border-r-2 border-amber-500 w-full py-4 transition-all duration-75 scale-90">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="mt-1">DASHBOARD</span>
+</div>
+<!-- CAM_GRID -->
+<div class="flex flex-col items-center justify-center text-slate-600 w-full py-4 hover:bg-white/5 hover:text-amber-200">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+<span class="mt-1">CAM_GRID</span>
+</div>
+<!-- LOGS -->
+<div class="flex flex-col items-center justify-center text-slate-600 w-full py-4 hover:bg-white/5 hover:text-amber-200">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="mt-1">LOGS</span>
+</div>
+<!-- ZONES -->
+<div class="flex flex-col items-center justify-center text-slate-600 w-full py-4 hover:bg-white/5 hover:text-amber-200">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="mt-1">ZONES</span>
+</div>
+<!-- TELEMETRY -->
+<div class="flex flex-col items-center justify-center text-slate-600 w-full py-4 hover:bg-white/5 hover:text-amber-200">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="mt-1">DATA</span>
+</div>
+</nav>
+<div class="mt-auto flex flex-col items-center gap-6">
+<div class="flex flex-col items-center text-slate-600">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="mt-1">SYS_OK</span>
+</div>
+<div class="w-10 h-10 bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover grayscale contrast-125 opacity-70" data-alt="High-contrast biometric identification photo of a tactical operator in low light with digital noise overlay" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfXj7b5mf67T4pPd5Bg3odCQrS_eZJ2CFoQtz23_ZhLLtXPysAB3utJMpFYvnTqJSI1Phe2X99Q-lrObQ3OaH53GJPJe1LxCiaQ37PHsFlOrYPbo1jEHO4BG3KkARvQaQHFIJOMjPPbsdb6vI9n_bBYxBl66pPSiGE9zyXAZfpcjMs335cbyf72tBt_X6vmPcE3mw-4ysPAqgxiJ9BEP7ljM_QOmzCGukL3OXQhRtS1vfGlECfY1-WQG4mE9bEeYK7vtrKjw4uMZur"/>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-20 flex-1 flex flex-col h-full bg-surface relative">
+<!-- Predicted Component: TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-[#101418] border-b-0 flat no shadows z-30">
+<div class="flex items-center gap-8">
+<div class="text-2xl font-black text-amber-500 tracking-tighter font-['Barlow_Condensed'] uppercase">
+                        SYNTHETIC SENTINEL
+                    </div>
+<nav class="hidden md:flex items-center gap-6 font-['Barlow_Condensed'] uppercase tracking-widest text-lg">
+<a class="text-amber-500 border-b-2 border-amber-500 pb-1 hover:text-amber-400 transition-colors duration-100 steps(4)" href="#">TACTICAL</a>
+<a class="text-slate-500 hover:text-amber-400 transition-colors duration-100 steps(4)" href="#">INTEL</a>
+<a class="text-slate-500 hover:text-amber-400 transition-colors duration-100 steps(4)" href="#">FEEDS</a>
+<a class="text-slate-500 hover:text-amber-400 transition-colors duration-100 steps(4)" href="#">CONFIG</a>
+</nav>
+</div>
+<div class="flex items-center gap-4 text-amber-500">
+<span class="material-symbols-outlined cursor-pointer hover:text-amber-300">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-amber-300">settings</span>
+<div class="flex flex-col items-end leading-none ml-4 font-['JetBrains_Mono'] text-[10px]">
+<span class="text-amber-500 font-bold">NODE_042</span>
+<span class="text-slate-500">SECTOR-7G</span>
+</div>
+</div>
+</header>
+<!-- Dashboard Body -->
+<div class="flex-1 flex overflow-hidden p-4 gap-4">
+<!-- Left Sidebar: 2x2 Grid -->
+<section class="w-1/4 h-full flex flex-col gap-4 overflow-y-auto pr-2">
+<h2 class="font-headline font-bold text-amber-500 tracking-widest uppercase mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">videocam</span> FEED_MATRIX
+                    </h2>
+<div class="grid grid-cols-2 gap-4">
+<!-- Cam 01 -->
+<div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 group hover:border-primary/50 transition-colors">
+<img class="w-full h-full object-cover grayscale opacity-60" data-alt="Grainy low-light security camera footage of an industrial warehouse interior with metallic shelves and high contrast shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVWftI2lh23th_duoNqo-8U9rGdO0JQ2hMFGZBwdgks27n5wCi-1uKsfQr-OzZeojFrXD5mqcdlRlufyU4d01ILjSYuQDnTWzZK5XYYP_7_J8E-DFsSTm_G_ytGtseZaeKTDpWa2XJcx4ejk_Ce_rE8IO0H42BxcJEbl0zANZYL4jW3NgUHNkNMFrnxfFgv3jUeuZIJBib4RL-Jks2tkyVEj9hbL39hG1OGxKmfFyhEEDdEGRqFXxT5o0AEPVFOfp05n3l9Je8JFJP"/>
+<div class="absolute top-1 left-1 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded-sm">
+<div class="w-1.5 h-1.5 bg-tertiary pulse-red rounded-full"></div>
+<span class="font-label text-[8px] text-tertiary">LIVE</span>
+</div>
+<div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/50">CAM_01_WEST_WNG</div>
+</div>
+<!-- Cam 02 -->
+<div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 group hover:border-primary/50 transition-colors">
+<img class="w-full h-full object-cover grayscale opacity-60" data-alt="Static security camera view of a dark server room aisle with blinking blue and green rack lights and sharp metallic edges" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLgbUp-T86YVPFnHHORoPEVbHwxM6sKwAi7G2goHfhQZKvhXZ7gw16KnwFrYy-tGUPb2hc_mXUNbLU6IbLESVsk-W_QD8VFXc38SafkBEJFbvuoPZIdDqrqBm2LVxUXh5MYQEaAnR8mOyXes5n62oSJOCmb05OGXs_S-tCvOj5k6Q3sTCpEiLJ1kjq1xmGD7l9EelrRpHelvyzD0qfiwln120g7xKtad8PxovJai9RDZauuK66lP_Fk978prR3U-Glug98o0li4AI5"/>
+<div class="absolute top-1 left-1 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded-sm">
+<div class="w-1.5 h-1.5 bg-tertiary pulse-red rounded-full"></div>
+<span class="font-label text-[8px] text-tertiary">LIVE</span>
+</div>
+<div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/50">CAM_02_SRV_FLR</div>
+</div>
+<!-- Cam 03 -->
+<div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 border-tertiary/50">
+<img class="w-full h-full object-cover grayscale opacity-40 blur-[1px]" data-alt="High-angle thermal security view of a parking garage entrance with distorted figures and high contrast light patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7hlmBL_yXKigotRRTPuPt0ccDYVRtMCDt_kK9iU7TbSgI2SjjpLNWSGXQy_3U0JlGQCrphtKe7VgIGVD7JZXOagGPJXJhel6FQHu2kpQHmnWF_DQQ6V4WAYM6cImZeLQ8HZNbQXm4rzj8LkzokbPS7LCiItMnWQsuwKPj28p0w_v3B8T6A0N0wIHIooYbxx3y1WNLxLha-yDdQ9Q0CEirLGx68U3e_pddu0bOEFCipB8s05aJ1V8EyTB_sfLA2NlfQ43bfyzkVcY6"/>
+<div class="absolute inset-0 bg-tertiary/5 flex items-center justify-center">
+<span class="font-headline font-black text-tertiary text-xs tracking-tighter">ALERT: MOTION</span>
+</div>
+<div class="absolute bottom-1 right-1 font-label text-[8px] text-tertiary">CAM_03_PRK_LOT</div>
+</div>
+<!-- Cam 04 -->
+<div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 opacity-50 grayscale">
+<div class="absolute inset-0 flex items-center justify-center flex-col gap-1">
+<span class="material-symbols-outlined text-on-surface/20">signal_disconnected</span>
+<span class="font-label text-[8px] text-on-surface/20">OFFLINE</span>
+</div>
+<div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/20">CAM_04_EXT_PRM</div>
+</div>
+</div>
+<!-- Additional Sidebar Modules -->
+<div class="mt-4 flex flex-col gap-4">
+<div class="p-3 bg-surface-container-low relative overflow-hidden">
+<div class="absolute top-0 right-0 p-1 font-label text-[8px] text-slate-500">T-04:22:11</div>
+<h3 class="font-headline text-amber-500 text-sm mb-2">ZONE_MANAGEMENT</h3>
+<div class="space-y-2" id="zones-list-container">
+</div>
+<button id="draw-zone-btn" class="w-full mt-2 py-2 bg-transparent border border-primary/20 text-primary font-label text-[10px] uppercase hover:bg-primary/10 transition-colors">
+    [ DRAW_NEW_ZONE ]
+</button>
+</div>
+</div>
+</section>
+<!-- Center Panel: Main View -->
+<section class="flex-1 flex flex-col gap-4">
+<div class="flex-1 bg-surface-container-lowest relative scanline-anim overflow-hidden border border-outline-variant/10">
+<!-- Image Canvas -->
+<img id="main-video-feed" class="w-full h-full object-fill" data-alt="Live view" src="/video_feed"/>
+<!-- Canvas Overlay for Drawing Zones -->
+<canvas id="zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-50 pointer-events-none"></canvas>
+<!-- HUD Overlays -->
+<div class="absolute inset-0">
+<!-- Corner Brackets -->
+<div class="corner-bracket top-4 left-4 border-t-2 border-l-2"></div>
+<div class="corner-bracket top-4 right-4 border-t-2 border-r-2"></div>
+<div class="corner-bracket bottom-4 left-4 border-b-2 border-l-2"></div>
+<div class="corner-bracket bottom-4 right-4 border-b-2 border-r-2"></div>
+<!-- Placeholder Bounding Boxes Removed -->
+<!-- Crosshair Overlay -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center opacity-40">
+<div class="w-16 h-px bg-primary"></div>
+<div class="h-16 w-px bg-primary -mt-8"></div>
+<div class="mt-2 font-label text-[10px] text-primary">SCAN_LOCK: TARGET_ACQUIRED</div>
+</div>
+</div>
+<!-- Header HUD Info -->
+<div class="absolute top-6 left-12 right-12 flex justify-between font-label text-[10px] text-primary/80">
+<div>LAT: 40.7128° N | LON: 74.0060° W</div>
+<div class="animate-pulse">REC ● 02:44:19:08</div>
+<div>FPS: 60.00 / BW: 4.2 MBPS</div>
+</div>
+</div>
+<!-- Intent Bar -->
+<div class="h-24 bg-surface-container-low border border-outline-variant/20 p-4 flex flex-col gap-2 relative">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">terminal</span>
+<span class="font-label text-[10px] text-primary uppercase">INTENT_PROCESSOR_v4.2</span>
+</div>
+<div class="flex-1 flex items-center bg-black/40 px-3 relative border-b border-primary/40">
+<span class="text-primary font-label mr-2">&gt;</span>
+<input id="intent-input" class="bg-transparent border-none outline-none focus:ring-0 text-on-surface font-label text-sm w-full p-0 placeholder-slate-600" placeholder="ENTER MISSION PARAMETERS..." type="text" value=""/>
+<div class="w-2 h-5 bg-primary animate-pulse ml-1"></div>
+</div>
+<div class="absolute -bottom-12 left-0 right-0 p-2 bg-surface-container-highest/80 backdrop-blur-md border border-outline-variant/20 font-label text-[10px] text-primary-fixed-dim z-20 overflow-hidden whitespace-nowrap">
+<span class="text-white opacity-50">PARSED_INTENT:</span> <span id="intent-display">READY</span>
+                        </div>
+</div>
+</section>
+<!-- Right Sidebar: Log & Stats -->
+<section class="w-1/4 h-full flex flex-col gap-4">
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 gap-2">
+<div class="bg-surface-container-low p-3 flex flex-col">
+<span class="font-label text-[10px] text-slate-500 uppercase">ACTIVE_OBJECTS</span>
+<span id="stat-active" class="font-headline text-3xl font-bold text-amber-500 leading-none mt-1">0</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-low p-3 flex flex-col border-l-2 border-tertiary">
+<span class="font-label text-[10px] text-slate-500 uppercase">INTRUSIONS</span>
+<span id="stat-intrusions" class="font-headline text-2xl font-bold text-tertiary leading-none mt-1">0</span>
+</div>
+<div class="bg-surface-container-low p-3 flex flex-col border-l-2 border-primary">
+<span class="font-label text-[10px] text-slate-500 uppercase">ZONES_ARMED</span>
+<span id="stat-zones" class="font-headline text-2xl font-bold text-primary leading-none mt-1">0</span>
+</div>
+</div>
+</div>
+<!-- Intrusion Log -->
+<div class="flex-1 flex flex-col bg-surface-container-low border border-outline-variant/10 overflow-hidden">
+<div class="p-3 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-high">
+<h3 class="font-headline text-sm text-on-surface font-bold uppercase tracking-widest">THREAT_LOG</h3>
+<span class="font-label text-[8px] text-tertiary animate-pulse">MONITORING_ACTIVE</span>
+</div>
+<div id="threat-log-container" class="flex-1 overflow-y-auto font-label text-[10px] p-2 space-y-2">
+    <!-- Dynamic logs injected here -->
+</div>
+</div>
+<button class="w-full py-4 bg-tertiary-container text-on-tertiary-container font-headline font-bold text-sm uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all">
+                        INITIATE LOCKDOWN
+                    </button>
+</section>
+</div>
+</main>
+</div>
+<!-- Predicted Component: BottomNavBar (Visible on Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 md:hidden bg-[#101418]/90 backdrop-blur-md border-t border-amber-500/20 shadow-[0_-4px_12px_rgba(245,158,11,0.1)] z-50">
+<div class="flex flex-col items-center justify-center text-slate-500 font-['JetBrains_Mono'] text-[10px] uppercase">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span>INTENT</span>
+</div>
+<div class="flex flex-col items-center justify-center text-amber-500 scale-110 font-['JetBrains_Mono'] text-[10px] uppercase">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span>LIVE</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 font-['JetBrains_Mono'] text-[10px] uppercase">
+<span class="material-symbols-outlined" data-icon="emergency_home">emergency_home</span>
+<span>ALERTS</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 font-['JetBrains_Mono'] text-[10px] uppercase">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span>DATA</span>
+</div>
+</nav>
+<!-- Scanning Line (Purely visual element) -->
+<div class="fixed top-0 left-0 w-full h-[2px] bg-primary/20 opacity-50 z-[110] scanline-move" style="animation: scanline 4s linear infinite;"></div>
+<script>
+    function fetchStats() {
+        fetch('/api/stats')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('stat-active').innerText = data.active_objects.toString().padStart(2, '0');
+                document.getElementById('stat-intrusions').innerText = data.intrusions.toString().padStart(2, '0');
+                document.getElementById('stat-zones').innerText = data.zones_armed.toString().padStart(2, '0');
+            })
+            .catch(console.error);
+    }
+    function fetchLogs() {
+        fetch('/api/logs')
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('threat-log-container');
+                container.innerHTML = '';
+                data.forEach(log => {
+                    let color = 'bg-surface/30 border-slate-500 text-on-surface/80 opacity-60';
+                    let label = log.event_type;
+                    
+                    if (log.event_type === 'INTRUSION') {
+                        color = 'bg-tertiary/10 border-tertiary text-tertiary';
+                    } else if (log.event_type === 'SUSPICIOUS_STAY') {
+                        color = 'bg-primary/10 border-primary text-primary';
+                        label = 'RESTRICTED_STAY';
+                    }
+
+                    const itemHTML = `
+                        <div class="p-2 border-l-2 relative mb-2 ${color}">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-bold">ID_${log.track_id}: ${label}</span>
+                                <span class="text-slate-500 text-[8px]">${log.timestamp ? log.timestamp.substring(11, 19) : ''}</span>
+                            </div>
+                            <div class="text-on-surface/80 opacity-80">${log.detail}</div>
+                        </div>
+                    `;
+                    container.innerHTML += itemHTML;
+                });
+            }).catch(console.error);
+    }
+    setInterval(() => { fetchStats(); fetchLogs(); }, 2000);
+    fetchStats();
+    fetchLogs();
+
+    const input = document.getElementById('intent-input');
+    const display = document.getElementById('intent-display');
+    input.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            const query = input.value;
+            display.innerText = "PROCESSING...";
+            fetch('/api/intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            }).then(r => r.json())
+              .then(data => {
+                  display.innerText = JSON.stringify(data);
+                  input.value = '';
+              });
+        }
+    });
+
+    // --- ZONE MANAGER LOGIC ---
+    function fetchZones() {
+        fetch('/api/zones')
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('zones-list-container');
+                container.innerHTML = '';
+                data.forEach(zone => {
+                    const el = `
+                    <div class="flex justify-between items-center p-2 bg-surface/50 border border-outline-variant/10 group">
+                        <span class="font-label text-[10px]">${zone.name.toUpperCase()} (${zone.type.toUpperCase()})</span>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-error cursor-pointer opacity-50 hover:opacity-100 transition-opacity" onclick="deleteZone(${zone.id})" title="Delete Zone">close</span>
+                            <div class="w-8 h-4 bg-primary-container relative"></div>
+                        </div>
+                    </div>`;
+                    container.innerHTML += el;
+                });
+            });
+    }
+
+    function deleteZone(id) {
+        if(confirm("Delete this restricted zone?")) {
+            fetch('/api/zones/' + id, {method: 'DELETE'}).then(() => fetchZones());
+        }
+    }
+    fetchZones();
+
+    const canvas = document.getElementById('zone-canvas');
+    const ctx = canvas.getContext('2d');
+    const drawBtn = document.getElementById('draw-zone-btn');
+    let isDrawingMode = false;
+    let isDrawing = false;
+    let startX = 0; let startY = 0;
+    let currentX = 0; let currentY = 0;
+
+    // Adjust canvas resolution to match its displayed size
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    drawBtn.addEventListener('click', () => {
+        isDrawingMode = !isDrawingMode;
+        if(isDrawingMode) {
+            drawBtn.innerText = "[ CANCEL DRAWING ]";
+            drawBtn.classList.replace('text-primary', 'text-error');
+            canvas.classList.remove('pointer-events-none');
+            resizeCanvas();
+        } else {
+            drawBtn.innerText = "[ DRAW_NEW_ZONE ]";
+            drawBtn.classList.replace('text-error', 'text-primary');
+            canvas.classList.add('pointer-events-none');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (!isDrawingMode) return;
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        isDrawing = true;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawingMode || !isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        currentX = e.clientX - rect.left;
+        currentY = e.clientY - rect.top;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#f59e0b'; // Primary Amber
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.1)';
+        ctx.fillRect(startX, startY, currentX - startX, currentY - startY);
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if (!isDrawingMode || !isDrawing) return;
+        isDrawing = false;
+        
+        const zoneName = prompt("Enter a name for this restricted zone:");
+        if (zoneName && zoneName.trim() !== '') {
+            // Calculate ratios
+            const x1_ratio = Math.min(startX, currentX) / canvas.width;
+            const y1_ratio = Math.min(startY, currentY) / canvas.height;
+            const x2_ratio = Math.max(startX, currentX) / canvas.width;
+            const y2_ratio = Math.max(startY, currentY) / canvas.height;
+            
+            fetch('/api/zones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: zoneName,
+                    x1_ratio: x1_ratio,
+                    y1_ratio: y1_ratio,
+                    x2_ratio: x2_ratio,
+                    y2_ratio: y2_ratio
+                })
+            }).then(() => {
+                fetchZones(); // Refresh the list
+            });
+        }
+        
+        // Reset drawing mode
+        drawBtn.click(); 
+    });
+</script>
+</body></html>
