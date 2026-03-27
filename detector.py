@@ -2,9 +2,9 @@ from ultralytics import YOLO
 
 
 class HumanDetector:
-    def __init__(self):
-        # Load YOLOv8 model (nano for CPU efficiency)
-        self.model = YOLO("yolov8n.pt")
+    def __init__(self, model=None):
+        # Use provided model or load YOLOv8 (nano for CPU efficiency)
+        self.model = model or YOLO("yolov8n.pt")
 
         # Target classes (COCO dataset)
         self.TARGET_CLASSES = [0, 2, 3, 5, 7]
