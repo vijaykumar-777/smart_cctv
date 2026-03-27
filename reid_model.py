@@ -16,7 +16,7 @@ class ReIDFeatureExtractor:
     Produces 512-dim L2-normalized feature embeddings per person crop.
     """
 
-    def __init__(self, model_name='osnet_x0_25', device=None):
+    def __init__(self, model_name='osnet_x1_0', device=None):
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:

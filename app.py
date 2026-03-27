@@ -96,13 +96,10 @@ def camera_worker(cam_id):
     video_fps = cap.get(cv2.CAP_PROP_FPS) or 30
     frame_delay = 1.0 / min(video_fps, TARGET_FPS)
 
-    # Resolution scaling for fast inference
-    scale = DETECTION_WIDTH / full_w
-
     frame_count = 0
     last_tracked_objects = []
 
-    print(f"🎥 Pipeline started for {cam_id} ({pipeline['label']}) @ {video_fps:.1f}fps | Scale: {scale:.2f}")
+    print(f"🎥 Pipeline started for {cam_id} ({pipeline['label']}) @ {video_fps:.1f}fps | {full_w}x{full_h}")
 
     while True:
         loop_start = time.time()
@@ -115,23 +112,9 @@ def camera_worker(cam_id):
         video_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         frame_count += 1
 
-        # ── Fast Inference: Run YOLO on downscaled frame every N frames ──
+        # ── Run YOLO at full resolution every N frames ──
         if frame_count % DETECT_EVERY_N == 1 or DETECT_EVERY_N == 1:
-            frame_small = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
-            detections_small = detector.detect(frame_small)
-
-            # Upscale detections back to original resolution
-            detections = []
-            for (x1, y1, x2, y2, conf, cls_id) in detections_small:
-                detections.append((
-                    int(x1 / scale),
-                    int(y1 / scale),
-                    int(x2 / scale),
-                    int(y2 / scale),
-                    conf,
-                    cls_id
-                ))
-
+            detections = detector.detect(frame)
             tracked_objects_local = tracker.update(frame, detections)
 
             # ── Cross-Camera ReID: resolve local IDs to global IDs ──

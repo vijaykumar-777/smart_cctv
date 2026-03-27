@@ -8,27 +8,23 @@ class GlobalTracker:
     Cross-camera person re-identification using Fast ReID (OSNet).
     
     Uses deep appearance embeddings (512-dim) from a pre-trained ReID model
-    to match the same person across different camera feeds. Far more accurate
-    than color histograms for distinguishing individuals.
+    to match the same person across different camera feeds.
     """
 
-    def __init__(self, match_threshold=0.60, feature_update_alpha=0.2):
+    def __init__(self, match_threshold=0.50):
         """
         Args:
             match_threshold: Minimum cosine similarity to consider a match (0-1).
                              Higher = stricter matching (fewer false positives).
-                             0.60 is a good default for OSNet embeddings.
-            feature_update_alpha: EMA blending factor for updating stored features.
         """
         self._lock = threading.Lock()
         self._next_global_id = 1
         self.match_threshold = match_threshold
-        self.feature_update_alpha = feature_update_alpha
 
         # (cam_id, local_id) -> global_id
         self._local_to_global = {}
 
-        # global_id -> { "feature": np.array(512,), "cam_id": str }
+        # global_id -> { "feature": np.array(512,), "source_cam": str, "all_cams": set }
         self._global_profiles = {}
 
         # Initialize the Fast ReID feature extractor
@@ -44,45 +40,74 @@ class GlobalTracker:
         """
         Map a (cam_id, local_track_id) to a persistent global ID.
         
-        Args:
-            cam_id: Camera identifier string
-            local_track_id: ByteTrack's local track ID
-            crop: BGR image crop of the detected object
-            cls_id: Class ID (only persons cls_id=0 get cross-camera matching)
-            
         Returns:
             global_id: Integer global ID that persists across cameras
         """
         with self._lock:
             key = (cam_id, local_track_id)
 
-            # Already mapped — update features and return
+            # Already mapped — return existing global ID
             if key in self._local_to_global:
                 gid = self._local_to_global[key]
-                self._update_profile(gid, crop, cam_id)
+                # Track which cameras have seen this person
+                if gid in self._global_profiles:
+                    self._global_profiles[gid]["all_cams"].add(cam_id)
                 return gid
 
-            # New local track — extract ReID features and try to match
-            new_feature = self._reid.extract(crop) if cls_id == 0 else None
+            # New local track — extract ReID features
+            if cls_id != 0:
+                # Non-person objects: just assign a new global ID (no ReID)
+                gid = self._next_global_id
+                self._next_global_id += 1
+                self._local_to_global[key] = gid
+                self._global_profiles[gid] = {
+                    "feature": None,
+                    "source_cam": cam_id,
+                    "all_cams": {cam_id},
+                }
+                return gid
 
+            new_feature = self._reid.extract(crop)
+            if new_feature is None:
+                # Can't extract features — assign new ID
+                gid = self._next_global_id
+                self._next_global_id += 1
+                self._local_to_global[key] = gid
+                self._global_profiles[gid] = {
+                    "feature": None,
+                    "source_cam": cam_id,
+                    "all_cams": {cam_id},
+                }
+                return gid
+
+            # Try to match against ALL existing global profiles
             best_gid = None
             best_score = -1.0
 
-            # Only attempt cross-camera matching for persons
-            if cls_id == 0 and new_feature is not None:
-                for gid, profile in self._global_profiles.items():
-                    # Match against profiles from OTHER cameras
-                    if profile["cam_id"] != cam_id:
-                        score = self._cosine_similarity(new_feature, profile["feature"])
-                        if score > best_score:
-                            best_score = score
-                            best_gid = gid
+            for gid, profile in self._global_profiles.items():
+                if profile["feature"] is None:
+                    continue
+
+                # Skip profiles that are already mapped FROM this same camera
+                # (to avoid self-matching within the same camera's tracks)
+                already_mapped_from_this_camera = False
+                for (c, _), g in self._local_to_global.items():
+                    if g == gid and c == cam_id:
+                        already_mapped_from_this_camera = True
+                        break
+                if already_mapped_from_this_camera:
+                    continue
+
+                score = self._cosine_similarity(new_feature, profile["feature"])
+                if score > best_score:
+                    best_score = score
+                    best_gid = gid
 
             if best_gid is not None and best_score >= self.match_threshold:
                 # Matched — reuse global ID
                 self._local_to_global[key] = best_gid
-                # Update the profile with blended features
-                self._blend_feature(best_gid, new_feature, cam_id)
+                self._global_profiles[best_gid]["all_cams"].add(cam_id)
+                print(f"🔗 ReID MATCH: {cam_id} local={local_track_id} → global={best_gid} (score={best_score:.3f})")
                 return best_gid
             else:
                 # No match — assign new global ID
@@ -91,35 +116,12 @@ class GlobalTracker:
                 self._local_to_global[key] = gid
                 self._global_profiles[gid] = {
                     "feature": new_feature,
-                    "cam_id": cam_id,
+                    "source_cam": cam_id,
+                    "all_cams": {cam_id},
                 }
+                if best_gid is not None:
+                    print(f"🆕 ReID NEW: {cam_id} local={local_track_id} → global={gid} (best_score={best_score:.3f} < {self.match_threshold})")
                 return gid
-
-    def _update_profile(self, gid, crop, cam_id):
-        """Periodically update stored features with exponential moving average."""
-        if gid not in self._global_profiles:
-            return
-        # Only update features every few calls to reduce computation
-        profile = self._global_profiles[gid]
-        profile["cam_id"] = cam_id
-
-    def _blend_feature(self, gid, new_feature, cam_id):
-        """Blend new feature with stored feature using EMA."""
-        if gid not in self._global_profiles or new_feature is None:
-            return
-        profile = self._global_profiles[gid]
-        old_feature = profile["feature"]
-        if old_feature is not None:
-            alpha = self.feature_update_alpha
-            blended = (1 - alpha) * old_feature + alpha * new_feature
-            # Re-normalize
-            norm = np.linalg.norm(blended)
-            if norm > 0:
-                blended = blended / norm
-            profile["feature"] = blended
-        else:
-            profile["feature"] = new_feature
-        profile["cam_id"] = cam_id
 
     def cleanup_stale(self, active_keys):
         """Remove local mappings that are no longer actively tracked."""
