@@ -67,6 +67,23 @@ def init_db():
                     duration REAL
                 )
             """)
+
+            # Detection index for forensic search
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS detection_index (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cam_id       TEXT NOT NULL,
+                    group_id     TEXT,
+                    floor        TEXT,
+                    zone_name    TEXT,
+                    object_class TEXT,
+                    color_label  TEXT,
+                    track_id     INTEGER,
+                    timestamp    TEXT NOT NULL,
+                    clip_path    TEXT,
+                    thumb_path   TEXT
+                )
+            """)
             conn.commit()
     except Exception as e:
         print(f"Error in init_db: {e}")
@@ -213,3 +230,83 @@ def get_zones():
     except Exception as e:
         print(f"Error in get_zones: {e}")
         return []
+
+
+def log_detection_index(cam_id, group_id, floor, zone_name, object_class,
+                        color_label, track_id, timestamp, clip_path=None, thumb_path=None):
+    try:
+        with sqlite3.connect(DB_NAME, timeout=30) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO detection_index
+                (cam_id, group_id, floor, zone_name, object_class, color_label,
+                 track_id, timestamp, clip_path, thumb_path)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (str(cam_id), group_id, floor, zone_name, object_class,
+                  color_label, track_id, timestamp, clip_path, thumb_path))
+            conn.commit()
+    except Exception as e:
+        print(f"Error in log_detection_index: {e}")
+
+
+def query_detection_index(filters):
+    try:
+        with sqlite3.connect(DB_NAME, timeout=30) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            conditions = []
+            params = []
+
+            if filters.get("cam_ids"):
+                placeholders = ",".join(["?"] * len(filters["cam_ids"]))
+                conditions.append(f"cam_id IN ({placeholders})")
+                params.extend(filters["cam_ids"])
+            if filters.get("group_id"):
+                conditions.append("group_id = ?")
+                params.append(filters["group_id"])
+            if filters.get("floor"):
+                conditions.append("floor = ?")
+                params.append(filters["floor"])
+            if filters.get("zone_name"):
+                conditions.append("zone_name LIKE ?")
+                params.append(f"%{filters['zone_name']}%")
+            if filters.get("object_class"):
+                conditions.append("object_class LIKE ?")
+                params.append(f"%{filters['object_class']}%")
+            if filters.get("color_label"):
+                conditions.append("color_label = ?")
+                params.append(filters["color_label"])
+            if filters.get("track_id"):
+                conditions.append("track_id = ?")
+                params.append(int(filters["track_id"]))
+            if filters.get("time_from"):
+                conditions.append("timestamp >= ?")
+                params.append(filters["time_from"])
+            if filters.get("time_to"):
+                conditions.append("timestamp <= ?")
+                params.append(filters["time_to"])
+
+            where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+            sql = f"SELECT * FROM detection_index{where} ORDER BY timestamp DESC LIMIT 200"
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"Error in query_detection_index: {e}")
+        return []
+
+
+def _update_clip_paths(cam_id, track_id, clip_path, thumb_path):
+    try:
+        with sqlite3.connect(DB_NAME, timeout=30) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE detection_index
+                SET clip_path = ?, thumb_path = ?
+                WHERE cam_id = ? AND track_id = ?
+                  AND clip_path IS NULL
+                ORDER BY timestamp DESC LIMIT 1
+            """, (clip_path, thumb_path, str(cam_id), track_id))
+            conn.commit()
+    except Exception as e:
+        print(f"Error in _update_clip_paths: {e}")
