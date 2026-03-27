@@ -328,7 +328,7 @@
                                 <span class="font-label text-[8px] text-tertiary">LIVE</span>
                             </div>
                             <div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/50">
-                                CAM_01_CORRIDOR</div>
+                                CAM_01</div>
                         </div>
                         <!-- Cam 02 -->
                         <div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 group hover:border-primary/50 transition-colors cursor-pointer feed-tile"
@@ -340,7 +340,7 @@
                                 <span class="font-label text-[8px] text-tertiary">LIVE</span>
                             </div>
                             <div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/50">
-                                CAM_02_PARKING</div>
+                                CAM_02</div>
                         </div>
                         <!-- Cam 03 -->
                         <div class="aspect-video bg-surface-container-low relative scanline-anim border border-outline-variant/20 group hover:border-primary/50 transition-colors cursor-pointer feed-tile"
@@ -352,7 +352,7 @@
                                 <span class="font-label text-[8px] text-tertiary">LIVE</span>
                             </div>
                             <div class="absolute bottom-1 right-1 font-label text-[8px] text-on-surface/50">
-                                CAM_03_ENTRANCE</div>
+                                CAM_03</div>
                         </div>
                     </div>
                     <!-- Additional Sidebar Modules -->
@@ -375,7 +375,7 @@
                     <div
                         class="flex-1 bg-surface-container-lowest relative scanline-anim overflow-hidden border border-outline-variant/10">
                         <!-- Image Canvas -->
-                        <img id="main-video-feed" class="w-full h-full object-fill" data-alt="Live view" src="/video_feed/cam-02"/>
+                        <img id="main-video-feed" class="w-full h-full object-fill" data-alt="Live view" src="/video_feed/cam-01"/>
                         <!-- Canvas Overlay for Drawing Zones -->
                         <canvas id="zone-canvas"
                             class="absolute inset-0 w-full h-full cursor-crosshair z-50 pointer-events-none"></canvas>
@@ -726,7 +726,7 @@
         });
 
         // ── CAMERA GROUPS ──
-        let activeCamId = 'cam-02';
+        let activeCamId = 'cam-01';
         let activeGroupId = null;
 
         function switchFeed(camId, el) {
